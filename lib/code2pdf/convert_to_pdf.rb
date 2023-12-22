@@ -1,5 +1,6 @@
 require 'cgi'
 require 'shellwords'
+require 'mimemagic'
 
 class ConvertToPDF
   PDF_OPTIONS = {
@@ -14,7 +15,7 @@ class ConvertToPDF
     elsif !params.key?(:to) || params[:to].nil?
       raise ArgumentError.new 'where should I save the generated pdf file?'
     else
-      @from, @to, @except = params[:from], params[:to], params[:except].to_s
+      @from, @to, @except, @theme_name, @os_name, @font_size = params[:from], params[:to], params[:except].to_s, params[:theme], params[:os_name], params[:font_size]
 
       if File.exist?(@except) && invalid_blacklist?
         raise LoadError.new "#{@except} is not a valid blacklist YAML file"
@@ -33,7 +34,9 @@ class ConvertToPDF
   def pdf
     html ||= ''
 
-    style = 'size: 12px; font-family: Helvetica, sans-serif;'
+    style = "size: #{@font_size}; font-family: Helvetica, sans-serif; font-size: #{@font_size};"
+
+    # html += "<style> .table_style { font-size: #{@font_size}; } </style>"
 
     read_files.each do |file|
       html += "<strong style='#{style}'>File: #{file.first}</strong></br></br>"
@@ -41,8 +44,7 @@ class ConvertToPDF
       html += add_space(30)
     end
 
-    @kit = PDFKit.new(html, page_size: 'A4')
-    @kit
+    PDFKit.new(html, page_size: 'A4')
   end
 
   def syntax_highlight(file)
@@ -50,7 +52,12 @@ class ConvertToPDF
     file_lexer = Rouge::Lexer.find(file_type)
     return CGI.escapeHTML(file.last) unless file_lexer
 
-    theme = Rouge::Themes::Base16.mode(:light)
+    if @theme_name == "github"
+      theme = Rouge::Themes::Github.new
+    else
+      theme = Rouge::Themes::Base16.mode(:light)
+    end
+
     formatter = Rouge::Formatters::HTMLInline.new(theme)
     formatter = Rouge::Formatters::HTMLTable.new(formatter, start_line: 1)
     code_data = file.last.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
@@ -85,7 +92,7 @@ class ConvertToPDF
 
   def read_files(path = nil)
     @files ||= []
-    path   ||= @from
+    path ||= @from
 
     Dir.foreach(path) do |item|
       item_path = "#{path}/#{item}"
@@ -105,8 +112,8 @@ class ConvertToPDF
 
     content = ''
     File.open(file, 'r') do |f|
-      if `file #{file.shellescape}` !~ /text/
-        content << '[binary]'
+      if MimeMagic.by_path(file).to_s !~ /text/
+        content << '[non text file]'
       else
         f.each_line { |line_content| content << line_content }
       end

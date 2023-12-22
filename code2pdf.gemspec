@@ -4,7 +4,7 @@ Gem::Specification.new do |gem|
   gem.name                  = 'code2pdf'
   gem.summary               = 'Convert your source code to PDF'
   gem.description           = 'Convert your source code to PDF'
-  gem.authors               = ['Lucas Caton']
+  gem.authors               = ['Lucas Caton', 'Alesavigo']
   gem.platform              = Gem::Platform::RUBY
   gem.version               = Code2pdf::VERSION
   gem.required_ruby_version = '>= 2.0.0'
@@ -21,4 +21,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
   gem.add_development_dependency 'pdf-inspector'
+  gem.add_development_dependency 'mimemagic'
+#   For win: add path to the freedesktop.org.xml into FREEDESKTOP_MIME_TYPES_PATH sys path var and only then install
+# gem mimemagic
 end
